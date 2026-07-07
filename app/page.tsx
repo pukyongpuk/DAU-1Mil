@@ -97,12 +97,143 @@ const statusMeta: Record<
   },
 };
 
-function fileSummary(file: File | null) {
-  if (!file) {
-    return "No file chosen";
-  }
+function AppMarkIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 16 16"
+    >
+      <path
+        d="M8 1.5 14.5 8 8 14.5 1.5 8 8 1.5Z"
+        fill="currentColor"
+      />
+      <path d="M8 4.8 11.2 8 8 11.2 4.8 8 8 4.8Z" fill="#FBF8FA" />
+    </svg>
+  );
+}
 
-  return file.name;
+function MoreIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 20 20"
+    >
+      <path
+        d="M4.25 10a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0ZM8.5 10a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0ZM12.75 10a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function StudyPageIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 20 24"
+    >
+      <path
+        d="M3.25 1.5h9.2L17.25 6.3v16.2h-14V1.5Z"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <path
+        d="M12.25 1.75V6.5H17M6.25 11h8M6.25 15h8M6.25 19h5"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function RecallNoteIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M4.25 3.5h9.5l5 5v12h-14.5v-17Z"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+      <path
+        d="M13.5 3.75V8.8h5M8 16.75l1.1-3.6 6.25-6.25a1.8 1.8 0 0 1 2.55 2.55l-6.25 6.25-3.65 1.05Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function CheckIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="m5 12.5 4.25 4.25L19 7"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+      />
+    </svg>
+  );
+}
+
+function AnalyzeIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 18 18"
+    >
+      <path
+        d="M9 1.75v3.5M9 12.75v3.5M16.25 9h-3.5M5.25 9h-3.5M14.13 3.87l-2.47 2.47M6.34 11.66l-2.47 2.47M14.13 14.13l-2.47-2.47M6.34 6.34 3.87 3.87"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function UploadHeader() {
+  return (
+    <header className="absolute left-0 right-0 top-0 flex h-16 max-w-[1024px] items-center justify-between gap-[130.9px] border-b border-[#C5C6CC] bg-[#FBF8FA] px-6">
+      <div className="flex h-8 w-[163.06px] items-center gap-2">
+        <AppMarkIcon className="h-4 w-4 flex-none text-[#212B3A]" />
+        <span className="h-8 w-[139.06px] truncate text-2xl font-bold leading-8 tracking-normal text-[#212B3A]">
+          Blank Recall
+        </span>
+      </div>
+      <button
+        aria-label="메뉴"
+        className="flex h-9 w-9 flex-none items-center justify-center rounded-full p-2 text-[#212B3A]"
+        type="button"
+      >
+        <MoreIcon className="h-5 w-5" />
+      </button>
+    </header>
+  );
 }
 
 function Header({
@@ -154,13 +285,17 @@ function UploadCard({
 }: {
   title: string;
   description: string;
-  icon: string;
+  icon: React.ReactNode;
   file: File | null;
   inputRef: React.RefObject<HTMLInputElement | null>;
   onChange: (file: File | null) => void;
 }) {
   return (
-    <label className="relative flex h-[174px] min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest p-4 text-center transition-colors hover:bg-surface-container-low">
+    <label
+      className={`relative flex h-[174px] min-h-40 w-[358px] cursor-pointer flex-col items-center justify-center rounded-lg border bg-white p-4 text-center transition-colors hover:bg-[#F7F8FA] ${
+        file ? "border-[#3B82F6]" : "border-[#C5C6CC]"
+      }`}
+    >
       <input
         accept="image/*"
         capture="environment"
@@ -169,20 +304,17 @@ function UploadCard({
         ref={inputRef}
         type="file"
       />
-      <div className="pointer-events-none z-0 flex w-[250px] flex-col items-center gap-2">
-        <div className="pb-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-container text-[23px] text-primary">
-            {file ? "✓" : icon}
+      <div className="pointer-events-none z-0 flex h-[140px] w-[250px] flex-col items-center gap-2">
+        <div className="flex h-14 w-12 flex-col items-start pb-2">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F0EDEE] text-[#212B3A]">
+            {file ? <CheckIcon className="h-6 w-6" /> : icon}
           </div>
         </div>
-        <h3 className="text-xl font-semibold leading-7 text-on-surface">
+        <h3 className="flex h-7 items-center text-center text-xl font-semibold leading-7 text-[#1B1B1D]">
           {title}
         </h3>
-        <p className="max-w-[250px] text-sm leading-5 text-on-surface-variant">
+        <p className="flex h-10 max-w-[250px] items-center text-center text-sm font-normal leading-5 text-[#44474C]">
           {description}
-        </p>
-        <p className="max-w-[250px] truncate text-xs font-semibold leading-4 text-secondary">
-          {fileSummary(file)}
         </p>
       </div>
     </label>
@@ -485,15 +617,11 @@ export default function Home() {
 
   const buttonText = useMemo(() => {
     if (viewState === "loading") {
-      return "ANALYZING";
+      return "Analyzing";
     }
 
-    if (!sourceFile || !answerFile) {
-      return "UPLOAD BOTH IMAGES";
-    }
-
-    return "COMPARE AND ANALYZE";
-  }, [answerFile, sourceFile, viewState]);
+    return "Compare and Analyze";
+  }, [viewState]);
 
   async function analyze() {
     if (!sourceFile || !answerFile) {
@@ -558,67 +686,67 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-background pb-[83px] text-on-surface">
-      <Header />
+    <main className="min-h-screen bg-[#FBF8FA] text-[#1B1B1D]">
+      <div className="relative mx-auto min-h-[884px] w-full max-w-[390px] overflow-hidden bg-[#FBF8FA]">
+        <UploadHeader />
 
-      <section className="mx-auto flex w-full max-w-5xl flex-col px-4 pb-10 pt-[88px]">
-        <div className="pb-10">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-[28px] font-bold leading-9 text-on-surface">
-              New Recall Session
-            </h1>
-            <p className="text-base leading-6 text-on-surface-variant">
-              Upload your source material and your blank recall attempt for
-              comparison.
-            </p>
+        <section className="absolute left-0 right-0 top-16 flex h-[731px] max-w-[1024px] flex-col items-start px-4 py-6">
+          <div className="flex h-[132px] w-[358px] flex-col items-start pb-10">
+            <div className="flex h-[92px] w-[358px] flex-col items-start gap-2">
+              <h1 className="flex h-9 w-[358px] items-center text-[28px] font-bold leading-9 text-[#1B1B1D]">
+                New Recall Session
+              </h1>
+              <p className="flex h-12 w-[358px] items-center text-base font-normal leading-6 text-[#44474C]">
+                Upload your source material and your blank recall attempt for
+                comparison.
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="flex flex-col gap-6 pb-[179px]">
-          <UploadCard
-            description="Upload a photo of the text you studied."
-            file={sourceFile}
-            icon="▮"
-            inputRef={sourceInputRef}
-            onChange={setSourceFile}
-            title="Original Study Page"
-          />
-          <UploadCard
-            description="Upload a photo of your handwritten or typed recall attempt."
-            file={answerFile}
-            icon="✎"
-            inputRef={answerInputRef}
-            onChange={setAnswerFile}
-            title="My Blank Recall Note"
-          />
-        </div>
-
-        {viewState === "error" ? (
-          <div className="mb-6 rounded-lg border border-[#FFB4AB] bg-error-container p-4 text-sm leading-5 text-on-error-container">
-            <p className="font-bold">분석에 실패했습니다.</p>
-            <p className="mt-1">{errorMessage}</p>
-            <button
-              className="mt-3 h-10 rounded-md bg-error px-4 text-xs font-semibold tracking-[0.05em] text-white"
-              disabled={!sourceFile || !answerFile}
-              onClick={analyze}
-              type="button"
-            >
-              RETRY SAME IMAGES
-            </button>
+          <div className="flex h-[551px] w-[358px] flex-col items-start gap-6 pb-[179px]">
+            <UploadCard
+              description="Upload a photo of the text you studied."
+              file={sourceFile}
+              icon={<StudyPageIcon className="h-[23.33px] w-[18.67px]" />}
+              inputRef={sourceInputRef}
+              onChange={setSourceFile}
+              title="Original Study Page"
+            />
+            <UploadCard
+              description="Upload a photo of your handwritten or typed recall attempt."
+              file={answerFile}
+              icon={<RecallNoteIcon className="h-[23.33px] w-[22.17px]" />}
+              inputRef={answerInputRef}
+              onChange={setAnswerFile}
+              title="My Blank Recall Note"
+            />
           </div>
-        ) : null}
-      </section>
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-outline-variant bg-surface-container-lowest p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-        <div className="mx-auto w-full max-w-5xl">
+          {viewState === "error" ? (
+            <div className="absolute bottom-4 left-4 right-4 rounded-lg border border-[#FFB4AB] bg-[#FFEDEA] p-4 text-sm leading-5 text-[#410002]">
+              <p className="font-bold">분석에 실패했습니다.</p>
+              <p className="mt-1">{errorMessage}</p>
+              <button
+                className="mt-3 h-10 rounded-md bg-[#BA1A1A] px-4 text-xs font-semibold tracking-[0.05em] text-white"
+                disabled={!sourceFile || !answerFile}
+                onClick={analyze}
+                type="button"
+              >
+                Retry Same Images
+              </button>
+            </div>
+          ) : null}
+        </section>
+
+        <div className="absolute left-0 right-0 top-[795px] flex h-[83px] flex-col items-start border-t border-[#C5C6CC] bg-white p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
           <button
-            className="flex h-[50px] w-full items-center justify-center gap-2 bg-[#3B82F6] px-6 text-xs font-semibold leading-4 tracking-[0.05em] text-white transition active:scale-[0.98] disabled:bg-surface-container-highest disabled:text-outline"
+            className="flex h-[50px] w-[358px] items-center justify-center gap-2 bg-[#3B82F6] px-6 py-4 text-center text-xs font-semibold leading-4 tracking-[0.05em] text-white transition active:scale-[0.98] disabled:bg-[#E4E2E3] disabled:text-[#75777D]"
             disabled={!canAnalyze}
             onClick={analyze}
             type="button"
           >
-            <span>◎</span>
-            {buttonText}
+            <AnalyzeIcon className="h-[18px] w-[18px]" />
+            <span>{buttonText}</span>
           </button>
         </div>
       </div>
