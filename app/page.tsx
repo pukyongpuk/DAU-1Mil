@@ -47,18 +47,10 @@ type AnalysisResult = {
   };
 };
 
-type UploadKind = "source" | "answer";
-
 type ViewState = "idle" | "loading" | "result" | "error";
 
-const onboardingSteps = [
-  "학습 자료를 올립니다.",
-  "백지 복습 답안을 올립니다.",
-  "답안별 피드백을 확인합니다.",
-];
-
 const loadingStages = [
-  "이미지를 읽는 중...",
+  "데이터를 처리하는 중...",
   "핵심 개념을 추출하는 중...",
   "답안 내용을 비교하는 중...",
   "피드백을 정리하는 중...",
@@ -66,48 +58,186 @@ const loadingStages = [
 
 const statusMeta: Record<
   Status,
-  { label: string; className: string; dotClassName: string }
+  {
+    label: string;
+    icon: string;
+    iconClassName: string;
+    badgeClassName: string;
+  }
 > = {
   correct: {
     label: "맞음",
-    className: "border-[#86efac] bg-[#ecfdf3] text-[#166534]",
-    dotClassName: "bg-[#16a34a]",
+    icon: "✓",
+    iconClassName: "bg-[#10B981] text-white",
+    badgeClassName: "bg-[#D1FAE5] text-[#065F46]",
   },
   partial: {
     label: "일부 맞음",
-    className: "border-[#fde68a] bg-[#fffbeb] text-[#92400e]",
-    dotClassName: "bg-[#f59e0b]",
+    icon: "!",
+    iconClassName: "bg-[#F59E0B] text-white",
+    badgeClassName: "bg-[#FEF3C7] text-[#92400E]",
   },
   incorrect: {
     label: "틀림",
-    className: "border-[#fecaca] bg-[#fef2f2] text-[#991b1b]",
-    dotClassName: "bg-[#dc2626]",
+    icon: "×",
+    iconClassName: "bg-error text-white",
+    badgeClassName: "bg-error-container text-on-error-container",
   },
   unsupported: {
     label: "근거 없음",
-    className: "border-[#c7d2fe] bg-[#eef2ff] text-[#3730a3]",
-    dotClassName: "bg-[#4f46e5]",
+    icon: "?",
+    iconClassName: "bg-[#003D88] text-white",
+    badgeClassName: "bg-[#D8E2FF] text-[#001A42]",
   },
   unreadable: {
     label: "읽기 어려움",
-    className: "border-outline-variant bg-surface-container text-on-surface-variant",
-    dotClassName: "bg-outline",
+    icon: "…",
+    iconClassName: "bg-outline text-white",
+    badgeClassName: "bg-surface-container text-on-surface-variant",
   },
 };
 
-function getFileLabel(file: File | null) {
+function fileSummary(file: File | null) {
   if (!file) {
-    return "아직 선택되지 않았습니다.";
+    return "No file chosen";
   }
 
-  const sizeMb = file.size / 1024 / 1024;
-  return `${file.name} · ${sizeMb.toFixed(1)}MB`;
+  return file.name;
 }
 
-function getRelatedKeyPoints(
-  answerUnit: AnswerUnit,
-  result: AnalysisResult,
-): GradeKeyPoint[] {
+function Header({
+  showBack,
+  onBack,
+}: {
+  showBack?: boolean;
+  onBack?: () => void;
+}) {
+  return (
+    <header className="fixed left-0 right-0 top-0 z-30 border-b border-outline-variant bg-background">
+      <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-6">
+        <div className="flex min-w-0 items-center gap-4">
+          {showBack ? (
+            <button
+              aria-label="뒤로"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-xl text-on-surface-variant"
+              onClick={onBack}
+              type="button"
+            >
+              ‹
+            </button>
+          ) : (
+            <span className="h-4 w-4 rounded-sm bg-primary" />
+          )}
+          <span className="truncate text-2xl font-bold leading-8 tracking-normal text-primary">
+            Blank Recall
+          </span>
+        </div>
+        <button
+          aria-label="메뉴"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-xl text-primary"
+          type="button"
+        >
+          ⋯
+        </button>
+      </div>
+    </header>
+  );
+}
+
+function UploadCard({
+  title,
+  description,
+  icon,
+  file,
+  inputRef,
+  onChange,
+}: {
+  title: string;
+  description: string;
+  icon: string;
+  file: File | null;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onChange: (file: File | null) => void;
+}) {
+  return (
+    <label className="relative flex h-[174px] min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest p-4 text-center transition-colors hover:bg-surface-container-low">
+      <input
+        accept="image/*"
+        capture="environment"
+        className="absolute inset-px z-10 h-[calc(100%-2px)] w-[calc(100%-2px)] cursor-pointer opacity-0"
+        onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+        ref={inputRef}
+        type="file"
+      />
+      <div className="pointer-events-none z-0 flex w-[250px] flex-col items-center gap-2">
+        <div className="pb-2">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-container text-[23px] text-primary">
+            {file ? "✓" : icon}
+          </div>
+        </div>
+        <h3 className="text-xl font-semibold leading-7 text-on-surface">
+          {title}
+        </h3>
+        <p className="max-w-[250px] text-sm leading-5 text-on-surface-variant">
+          {description}
+        </p>
+        <p className="max-w-[250px] truncate text-xs font-semibold leading-4 text-secondary">
+          {fileSummary(file)}
+        </p>
+      </div>
+    </label>
+  );
+}
+
+function LoadingScreen({ elapsedSeconds }: { elapsedSeconds: number }) {
+  const stageIndex = Math.min(
+    loadingStages.length - 1,
+    Math.floor(elapsedSeconds / 7),
+  );
+  const progress = Math.min(94, 12 + elapsedSeconds * 2.4);
+
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center bg-background px-6 py-[292px] text-on-surface">
+      <section className="relative h-[300px] w-full max-w-96">
+        <div className="absolute left-1/2 top-0 flex h-24 w-24 -translate-x-1/2 items-center justify-center rounded-full border-4 border-surface-container-highest">
+          <div className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-primary" />
+          <span className="text-2xl text-primary">◎</span>
+        </div>
+
+        <div className="absolute left-[7%] right-[7%] top-24 pt-10 text-center">
+          <h1 className="text-xl font-semibold leading-7 text-on-surface">
+            이미지를 비교 분석하고 있어요...
+          </h1>
+          <p className="mt-4 text-sm leading-5 text-on-surface-variant">
+            잠시만 기다려주세요.
+          </p>
+        </div>
+
+        <div className="absolute left-0 right-0 top-[200px] pt-10">
+          <div className="h-1 overflow-hidden rounded-full bg-surface-container-highest">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-700"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="absolute left-0 right-0 top-[244px] pt-10 text-center">
+          <p className="animate-pulse text-xs font-semibold leading-4 tracking-[0.05em] text-outline">
+            {loadingStages[stageIndex]}
+          </p>
+          {elapsedSeconds >= 30 ? (
+            <p className="mx-auto mt-4 max-w-[300px] rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm leading-5 text-on-surface-variant">
+              사진 속 글자가 많으면 30초 이상 걸릴 수 있습니다.
+            </p>
+          ) : null}
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function relatedKeyPoints(answerUnit: AnswerUnit, result: AnalysisResult) {
   const gradeAnswerUnit = result.grade.answerUnits.find(
     (unit) => unit.id === answerUnit.id,
   );
@@ -116,7 +246,7 @@ function getRelatedKeyPoints(
   return result.grade.keyPoints.filter((keyPoint) => coveredIds.has(keyPoint.id));
 }
 
-function getAnswerUnitStatus(answerUnit: AnswerUnit, result: AnalysisResult): Status {
+function answerUnitStatus(answerUnit: AnswerUnit, result: AnalysisResult): Status {
   const gradeAnswerUnit = result.grade.answerUnits.find(
     (unit) => unit.id === answerUnit.id,
   );
@@ -125,22 +255,22 @@ function getAnswerUnitStatus(answerUnit: AnswerUnit, result: AnalysisResult): St
     return "unsupported";
   }
 
-  const relatedKeyPoints = getRelatedKeyPoints(answerUnit, result);
+  const keyPoints = relatedKeyPoints(answerUnit, result);
 
-  if (relatedKeyPoints.length === 0) {
+  if (keyPoints.length === 0) {
     return "incorrect";
   }
 
-  if (relatedKeyPoints.some((keyPoint) => keyPoint.status === "unreadable")) {
+  if (keyPoints.some((keyPoint) => keyPoint.status === "unreadable")) {
     return "unreadable";
   }
 
-  if (relatedKeyPoints.some((keyPoint) => keyPoint.status === "unsupported")) {
+  if (keyPoints.some((keyPoint) => keyPoint.status === "unsupported")) {
     return "unsupported";
   }
 
   if (
-    relatedKeyPoints.some(
+    keyPoints.some(
       (keyPoint) =>
         keyPoint.status === "partial" || keyPoint.status === "incorrect",
     )
@@ -151,7 +281,7 @@ function getAnswerUnitStatus(answerUnit: AnswerUnit, result: AnalysisResult): St
   return "correct";
 }
 
-function getAnswerUnitReason(answerUnit: AnswerUnit, result: AnalysisResult) {
+function feedbackReason(answerUnit: AnswerUnit, result: AnalysisResult) {
   const gradeAnswerUnit = result.grade.answerUnits.find(
     (unit) => unit.id === answerUnit.id,
   );
@@ -160,208 +290,146 @@ function getAnswerUnitReason(answerUnit: AnswerUnit, result: AnalysisResult) {
     return gradeAnswerUnit.unsupportedReason;
   }
 
-  const relatedKeyPoints = getRelatedKeyPoints(answerUnit, result);
-  const nonCorrect = relatedKeyPoints.find(
-    (keyPoint) => keyPoint.status !== "correct",
-  );
-
-  return nonCorrect?.reason ?? relatedKeyPoints[0]?.reason ?? "채점 근거가 부족합니다.";
-}
-
-function getAnswerUnitCorrection(answerUnit: AnswerUnit, result: AnalysisResult) {
+  const keyPoints = relatedKeyPoints(answerUnit, result);
   return (
-    getRelatedKeyPoints(answerUnit, result).find(
-      (keyPoint) => keyPoint.correction,
-    )?.correction ?? null
+    keyPoints.find((keyPoint) => keyPoint.status !== "correct")?.reason ??
+    keyPoints[0]?.reason ??
+    "채점 근거가 부족합니다."
   );
 }
 
-function UploadCard({
-  title,
-  description,
-  file,
-  inputRef,
-  onChange,
-}: {
-  title: string;
-  description: string;
-  file: File | null;
-  inputRef: React.RefObject<HTMLInputElement | null>;
-  onChange: (file: File | null) => void;
-}) {
+function feedbackCorrection(answerUnit: AnswerUnit, result: AnalysisResult) {
   return (
-    <label className="relative flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest p-5 text-center transition-colors hover:bg-surface-container">
-      <input
-        accept="image/*"
-        capture="environment"
-        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-        onChange={(event) => onChange(event.target.files?.[0] ?? null)}
-        ref={inputRef}
-        type="file"
-      />
-      <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-surface-container text-2xl text-primary">
-        {file ? "✓" : "+"}
-      </span>
-      <span className="text-base font-bold text-on-surface">{title}</span>
-      <span className="mt-2 max-w-64 text-sm leading-6 text-on-surface-variant">
-        {description}
-      </span>
-      <span className="mt-4 max-w-full truncate text-sm font-semibold text-secondary">
-        {getFileLabel(file)}
-      </span>
-    </label>
+    relatedKeyPoints(answerUnit, result).find((keyPoint) => keyPoint.correction)
+      ?.correction ?? null
   );
 }
 
-function LoadingView({ elapsedSeconds }: { elapsedSeconds: number }) {
-  const stageIndex = Math.min(
-    loadingStages.length - 1,
-    Math.floor(elapsedSeconds / 7),
-  );
-  const progress = Math.min(92, 18 + elapsedSeconds * 2.2);
+function ScoreRing({ score }: { score: number }) {
+  const normalizedScore = Math.max(0, Math.min(100, Math.round(score)));
 
   return (
-    <section className="mx-auto flex min-h-screen w-full max-w-2xl flex-col items-center justify-center px-5 py-10 text-center">
-      <div className="mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-surface-container">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-outline-variant border-t-primary" />
-      </div>
-      <h1 className="text-2xl font-bold text-on-surface">
-        이미지를 비교 분석하고 있어요
-      </h1>
-      <p className="mt-3 text-sm leading-6 text-on-surface-variant">
-        손글씨와 학습 자료를 함께 읽는 중입니다.
-      </p>
-      <div className="mt-10 w-full rounded-full bg-surface-container-highest">
-        <div
-          className="h-1.5 rounded-full bg-primary transition-all duration-700"
-          style={{ width: `${progress}%` }}
+    <div className="relative h-48 w-48">
+      <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
+        <path
+          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+          fill="none"
+          stroke="#E4E2E3"
+          strokeWidth="3.5"
         />
+        <path
+          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+          fill="none"
+          stroke="#003D88"
+          strokeDasharray={`${normalizedScore}, 100`}
+          strokeLinecap="round"
+          strokeWidth="3"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-[34px] font-bold leading-[41px] text-primary">
+          {normalizedScore}
+        </span>
+        <span className="text-[25px] leading-[31px] text-secondary">Points</span>
       </div>
-      <p className="mt-6 animate-pulse text-sm font-semibold text-outline">
-        {loadingStages[stageIndex]}
-      </p>
-      {elapsedSeconds >= 30 ? (
-        <p className="mt-4 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm leading-6 text-on-surface-variant">
-          사진 속 글자가 많으면 30초 이상 걸릴 수 있습니다. 같은 화면에서 계속
-          기다려 주세요.
-        </p>
-      ) : null}
-    </section>
+    </div>
   );
 }
 
-function ResultView({
+function ResultScreen({
   result,
   onReset,
 }: {
   result: AnalysisResult;
   onReset: () => void;
 }) {
-  const score = Math.round(result.grade.score);
-
   return (
-    <main className="min-h-screen bg-background text-on-background">
-      <section className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-5 py-8 sm:px-8">
-        <header className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold text-secondary">Blank Recall</p>
-            <h1 className="mt-2 text-2xl font-bold text-on-surface">
-              분석 결과
-            </h1>
-          </div>
-          <button
-            className="rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-2 text-sm font-semibold text-on-surface"
-            onClick={onReset}
-            type="button"
-          >
-            새로 분석
-          </button>
-        </header>
-
-        <section className="flex flex-col items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest p-6">
-          <div
-            className="flex h-40 w-40 items-center justify-center rounded-full"
-            style={{
-              background: `conic-gradient(var(--primary) ${score * 3.6}deg, var(--surface-container-highest) 0deg)`,
-            }}
-          >
-            <div className="flex h-32 w-32 flex-col items-center justify-center rounded-full bg-background">
-              <span className="text-4xl font-bold text-on-surface">{score}</span>
-              <span className="text-sm font-semibold text-secondary">점</span>
-            </div>
-          </div>
-          <p className="mt-4 text-center text-sm leading-6 text-on-surface-variant">
+    <main className="min-h-screen bg-background pb-[166px] text-on-surface">
+      <Header onBack={onReset} showBack />
+      <section className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-4 pb-16 pt-[89px]">
+        <section className="relative flex min-h-[340px] flex-col items-center">
+          <h2 className="pb-4 text-xl font-semibold leading-7 text-on-surface">
+            Session Result
+          </h2>
+          <ScoreRing score={result.grade.score} />
+          <p className="mt-4 max-w-[300px] text-center text-sm leading-5 text-on-surface-variant">
             핵심 개념 {result.grade.keyPoints.length}개를 기준으로 답안 전체를
             비교했습니다.
           </p>
         </section>
 
-        <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-bold text-on-surface">답안별 피드백</h2>
-          {result.extract.answerUnits.map((answerUnit) => {
-            const status = getAnswerUnitStatus(answerUnit, result);
-            const meta = statusMeta[status];
-            const correction = getAnswerUnitCorrection(answerUnit, result);
+        <section className="flex flex-col gap-4">
+          <h3 className="border-b border-outline-variant pb-2 text-xl font-semibold leading-7 text-on-surface">
+            Detailed Analysis
+          </h3>
+          <div className="flex flex-col gap-4">
+            {result.extract.answerUnits.map((answerUnit) => {
+              const status = answerUnitStatus(answerUnit, result);
+              const meta = statusMeta[status];
+              const correction = feedbackCorrection(answerUnit, result);
+              const isCorrect = status === "correct";
 
-            return (
-              <article
-                className="rounded-lg border border-outline-variant bg-surface-container-lowest p-4"
-                key={answerUnit.id}
-              >
-                <div className="flex items-start gap-3">
-                  <span
-                    className={`mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full ${meta.dotClassName}`}
-                  />
+              return (
+                <article
+                  className="flex items-start gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest p-4 shadow-sm"
+                  key={answerUnit.id}
+                >
+                  <div className="flex w-5 flex-shrink-0 pt-2">
+                    <span
+                      className={`flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold ${meta.iconClassName}`}
+                    >
+                      {meta.icon}
+                    </span>
+                  </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
+                    <p
+                      className={`text-base leading-6 ${
+                        isCorrect
+                          ? "text-on-surface"
+                          : "text-on-surface-variant line-through decoration-outline"
+                      }`}
+                    >
+                      {answerUnit.text}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
                       <span
-                        className={`rounded-full border px-2.5 py-1 text-xs font-bold ${meta.className}`}
+                        className={`rounded-full px-2 py-1 text-xs font-semibold leading-4 tracking-[0.05em] ${meta.badgeClassName}`}
                       >
                         {meta.label}
                       </span>
-                      <span className="text-xs font-semibold text-outline">
+                      <span className="text-xs font-semibold leading-4 tracking-[0.05em] text-outline">
                         {answerUnit.id}
                       </span>
                     </div>
-                    <p className="mt-3 text-base font-semibold leading-7 text-on-surface">
-                      {answerUnit.text}
-                    </p>
-                    {status === "correct" ? (
-                      <p className="mt-2 text-sm leading-6 text-on-surface-variant">
-                        {getAnswerUnitReason(answerUnit, result)}
-                      </p>
-                    ) : (
-                      <div className="mt-3 space-y-2 text-sm leading-6">
-                        <p className="text-on-surface-variant">
-                          {getAnswerUnitReason(answerUnit, result)}
+                    {!isCorrect ? (
+                      <div className="mt-4 rounded-md border border-[#FFB4AB] bg-error-container p-2">
+                        <p className="text-sm font-bold leading-5 text-on-error-container">
+                          {correction ?? feedbackReason(answerUnit, result)}
                         </p>
-                        {correction ? (
-                          <p className="rounded-lg border border-[#ffb4ab] bg-[#ffdad6] px-3 py-2 text-[#93000a]">
-                            {correction}
-                          </p>
-                        ) : null}
                       </div>
-                    )}
+                    ) : null}
                   </div>
-                </div>
-              </article>
-            );
-          })}
+                </article>
+              );
+            })}
+          </div>
         </section>
 
         {result.grade.missedKeyPoints.length > 0 ? (
           <section className="rounded-lg border border-outline-variant bg-surface-container p-4">
-            <h2 className="text-lg font-bold text-on-surface">놓친 내용</h2>
-            <div className="mt-3 space-y-3">
+            <h3 className="text-xl font-semibold leading-7 text-on-surface">
+              놓친 내용
+            </h3>
+            <div className="mt-4 flex flex-col gap-3">
               {result.grade.missedKeyPoints.map((keyPoint) => (
                 <div
                   className="rounded-lg bg-surface-container-lowest p-3"
                   key={keyPoint.id}
                 >
-                  <p className="text-sm font-bold text-on-surface">
+                  <p className="text-sm font-bold leading-5 text-on-surface">
                     {keyPoint.text}
                   </p>
-                  <p className="mt-1 text-sm leading-6 text-on-surface-variant">
+                  <p className="mt-1 text-sm leading-5 text-on-surface-variant">
                     {keyPoint.reason}
                   </p>
                 </div>
@@ -370,6 +438,24 @@ function ResultView({
           </section>
         ) : null}
       </section>
+
+      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-outline-variant bg-surface-container-lowest p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-2">
+          <button
+            className="flex h-[53px] w-full items-center justify-center gap-2 rounded-lg bg-primary-container px-4 text-xs font-semibold leading-4 tracking-[0.05em] text-white"
+            type="button"
+          >
+            Save Report
+          </button>
+          <button
+            className="flex h-14 w-full items-center justify-center gap-2 rounded-lg border-2 border-primary-container px-4 text-xs font-semibold leading-4 tracking-[0.05em] text-primary-container"
+            onClick={onReset}
+            type="button"
+          >
+            New Session
+          </button>
+        </div>
+      </div>
     </main>
   );
 }
@@ -399,14 +485,14 @@ export default function Home() {
 
   const buttonText = useMemo(() => {
     if (viewState === "loading") {
-      return "분석 중입니다";
+      return "ANALYZING";
     }
 
     if (!sourceFile || !answerFile) {
-      return "사진 2장을 올리면 분석할 수 있어요";
+      return "UPLOAD BOTH IMAGES";
     }
 
-    return "비교 분석하기";
+    return "COMPARE AND ANALYZE";
   }, [answerFile, sourceFile, viewState]);
 
   async function analyze() {
@@ -419,8 +505,8 @@ export default function Home() {
     formData.append("answerImage", answerFile);
 
     setElapsedSeconds(0);
-    setViewState("loading");
     setErrorMessage(null);
+    setViewState("loading");
 
     try {
       const response = await fetch("/api/analyze", {
@@ -464,86 +550,78 @@ export default function Home() {
   }
 
   if (viewState === "loading") {
-    return <LoadingView elapsedSeconds={elapsedSeconds} />;
+    return <LoadingScreen elapsedSeconds={elapsedSeconds} />;
   }
 
   if (viewState === "result" && result) {
-    return <ResultView onReset={resetAll} result={result} />;
+    return <ResultScreen onReset={resetAll} result={result} />;
   }
 
   return (
-    <main className="min-h-screen bg-background text-on-background">
-      <section className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-5 py-8 sm:px-8">
-        <header className="mb-8">
-          <p className="text-sm font-semibold text-secondary">Blank Recall</p>
-          <h1 className="mt-3 text-3xl font-bold tracking-normal text-on-background sm:text-4xl">
-            사진 두 장으로 복습 답안을 점검하세요
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-on-surface-variant">
-            학습 자료와 백지 복습 답안을 올리면 핵심 개념 누락, 근거 없는 답변,
-            최소 수정 문장을 한 번에 확인할 수 있습니다.
-          </p>
-        </header>
+    <main className="min-h-screen bg-background pb-[83px] text-on-surface">
+      <Header />
 
-        <ol className="mb-8 grid gap-3 sm:grid-cols-3">
-          {onboardingSteps.map((step, index) => (
-            <li
-              className="rounded-lg border border-outline-variant bg-surface-container-lowest p-4"
-              key={step}
-            >
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary text-sm font-bold text-on-primary">
-                {index + 1}
-              </span>
-              <p className="mt-3 text-sm font-semibold leading-6 text-on-surface">
-                {step}
-              </p>
-            </li>
-          ))}
-        </ol>
+      <section className="mx-auto flex w-full max-w-5xl flex-col px-4 pb-10 pt-[88px]">
+        <div className="pb-10">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-[28px] font-bold leading-9 text-on-surface">
+              New Recall Session
+            </h1>
+            <p className="text-base leading-6 text-on-surface-variant">
+              Upload your source material and your blank recall attempt for
+              comparison.
+            </p>
+          </div>
+        </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-6 pb-[179px]">
           <UploadCard
-            description="교재, 필기, 강의 자료처럼 기준이 되는 내용을 촬영하거나 선택하세요."
+            description="Upload a photo of the text you studied."
             file={sourceFile}
+            icon="▮"
             inputRef={sourceInputRef}
             onChange={setSourceFile}
-            title="학습 자료 사진"
+            title="Original Study Page"
           />
           <UploadCard
-            description="기억나는 대로 쓴 백지 복습 답안을 촬영하거나 선택하세요."
+            description="Upload a photo of your handwritten or typed recall attempt."
             file={answerFile}
+            icon="✎"
             inputRef={answerInputRef}
             onChange={setAnswerFile}
-            title="백지 답안 사진"
+            title="My Blank Recall Note"
           />
         </div>
 
         {viewState === "error" ? (
-          <div className="mt-5 rounded-lg border border-[#ffb4ab] bg-[#ffdad6] p-4 text-sm leading-6 text-[#93000a]">
+          <div className="mb-6 rounded-lg border border-[#FFB4AB] bg-error-container p-4 text-sm leading-5 text-on-error-container">
             <p className="font-bold">분석에 실패했습니다.</p>
             <p className="mt-1">{errorMessage}</p>
             <button
-              className="mt-3 rounded-lg bg-[#93000a] px-4 py-2 text-sm font-bold text-white"
+              className="mt-3 h-10 rounded-md bg-error px-4 text-xs font-semibold tracking-[0.05em] text-white"
               disabled={!sourceFile || !answerFile}
               onClick={analyze}
               type="button"
             >
-              같은 사진으로 다시 시도
+              RETRY SAME IMAGES
             </button>
           </div>
         ) : null}
+      </section>
 
-        <div className="sticky bottom-0 -mx-5 mt-auto bg-surface-container-lowest px-5 py-4 sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:pt-8">
+      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-outline-variant bg-surface-container-lowest p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+        <div className="mx-auto w-full max-w-5xl">
           <button
-            className="h-12 w-full rounded-lg bg-primary px-5 text-base font-semibold text-on-primary transition active:scale-[0.99] disabled:bg-surface-container-highest disabled:text-outline sm:w-auto"
+            className="flex h-[50px] w-full items-center justify-center gap-2 bg-[#3B82F6] px-6 text-xs font-semibold leading-4 tracking-[0.05em] text-white transition active:scale-[0.98] disabled:bg-surface-container-highest disabled:text-outline"
             disabled={!canAnalyze}
             onClick={analyze}
             type="button"
           >
+            <span>◎</span>
             {buttonText}
           </button>
         </div>
-      </section>
+      </div>
     </main>
   );
 }
