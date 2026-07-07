@@ -1,5 +1,26 @@
 import { z } from "zod";
 
+function dropEmptyTextItems(value: unknown) {
+  if (!Array.isArray(value)) {
+    return value;
+  }
+
+  return value.filter((item) => {
+    if (
+      typeof item === "object" &&
+      item !== null &&
+      "text" in item &&
+      typeof item.text === "string"
+    ) {
+      return item.text.trim().length > 0;
+    }
+
+    return true;
+  });
+}
+
+const nonEmptyTextSchema = z.string().trim().min(1);
+
 export const answerUnitStatusSchema = z.enum([
   "correct",
   "partial",
@@ -9,37 +30,59 @@ export const answerUnitStatusSchema = z.enum([
 ]);
 
 export const extractResultSchema = z.object({
-  sourceKeyPoints: z
+  sourceKeyPoints: z.preprocess(
+    dropEmptyTextItems,
+    z
+      .array(
+        z.object({
+          id: nonEmptyTextSchema,
+          text: nonEmptyTextSchema,
+        }),
+      )
+      .min(1),
+  ),
+  answerUnits: z.preprocess(
+    dropEmptyTextItems,
+    z
+      .array(
+        z.object({
+          id: nonEmptyTextSchema,
+          text: nonEmptyTextSchema,
+        }),
+      )
+      .min(1),
+  ),
+});
+
+export const gradeResultSchema = z.object({
+  score: z.number().min(0).max(100),
+  keyPoints: z
     .array(
       z.object({
-        id: z.string().min(1),
-        text: z.string().min(1),
+        id: nonEmptyTextSchema,
+        status: answerUnitStatusSchema,
+        matchedAnswerUnitIds: z.array(nonEmptyTextSchema),
+        reason: nonEmptyTextSchema,
+        correction: nonEmptyTextSchema.nullable(),
       }),
     )
     .min(1),
   answerUnits: z
     .array(
       z.object({
-        id: z.string().min(1),
-        text: z.string().min(1),
+        id: nonEmptyTextSchema,
+        coveredKeyPointIds: z.array(nonEmptyTextSchema),
+        unsupportedReason: nonEmptyTextSchema.nullable(),
       }),
     )
     .min(1),
-});
-
-export const gradeResultSchema = z.object({
-  score: z.number().min(0).max(100),
-  units: z
-    .array(
-      z.object({
-        id: z.string().min(1),
-        status: answerUnitStatusSchema,
-        reason: z.string().min(1),
-        correction: z.string().nullable(),
-      }),
-    )
-    .min(1),
-  missedKeyPoints: z.array(z.string().min(1)),
+  missedKeyPoints: z.array(
+    z.object({
+      id: nonEmptyTextSchema,
+      text: nonEmptyTextSchema,
+      reason: nonEmptyTextSchema,
+    }),
+  ),
 });
 
 export const analysisResultSchema = z.object({

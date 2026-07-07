@@ -55,12 +55,14 @@ export function buildVisionUserContent(
 ): GroqContent[] {
   return [
     { type: "text", text: prompt },
+    { type: "text", text: "첫 번째 이미지: 학습 자료" },
     {
       type: "image_url",
       image_url: {
         url: sourceImage.dataUrl,
       },
     },
+    { type: "text", text: "두 번째 이미지: 사용자의 백지 복습 답안" },
     {
       type: "image_url",
       image_url: {

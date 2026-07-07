@@ -65,6 +65,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error(error);
+    }
+
     if (error instanceof GroqRequestError) {
       return errorResponse("Analysis request failed.", 502);
     }
